@@ -5,6 +5,8 @@ Arduino code for light dancing
 
 The aim of this project is to play with the combination of motion and color to produce an interactive visual experience.
 
+There's a photo stream here: https://www.icloud.com/photostream/#A15oqs3qSqdIy
+
 Experiment 1: Gloves
 ====================
 
