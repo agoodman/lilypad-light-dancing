@@ -2,7 +2,7 @@ int xPin = A0, yPin = A1, zPin = A2;
 int redPin = 7, greenPin = 5, bluePin = 6;
 int redVal, greenVal, blueVal, whiteVal;
 int redDelay, greenDelay, blueDelay;
-const float sampleCoef = 0.25f;
+const float sampleCoef = 0.0625f;
 
 void setup() {
   pinMode(redPin, OUTPUT);
@@ -16,18 +16,21 @@ int bound(int aVal) {
 }
 
 void loop() {
-  redVal = analogRead(zPin);
-  greenVal = analogRead(yPin);
-  blueVal = analogRead(xPin);
+  redVal = analogRead(xPin);
+  greenVal = analogRead(zPin);
+  blueVal = analogRead(yPin);
   
   redVal -= 512;
   greenVal -= 512;
   blueVal -= 512;
+  if( redVal<0 ) redVal = -redVal;
+  if( greenVal<0 ) greenVal = -greenVal;
+  if( blueVal<0 ) blueVal = -blueVal;
 
   // compute delays for each color
-  redDelay = 128 + (int)((float)redVal * sampleCoef * 0.5f);
-  greenDelay = 128 + (int)((float)greenVal * sampleCoef * 0.5f);
-  blueDelay = 128 + (int)((float)blueVal * sampleCoef * 0.5f);
+  redDelay = (int)((float)redVal * sampleCoef * 0.5f);
+  greenDelay = (int)((float)greenVal * sampleCoef * 0.5f);
+  blueDelay = (int)((float)blueVal * sampleCoef * 0.5f);
   int cycle = 256;
   
   // at the beginning of each cycle, turn the lights on
