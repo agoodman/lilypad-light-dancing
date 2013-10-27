@@ -2,7 +2,8 @@ int xPin = A0, yPin = A1, zPin = A2;
 int redPin = 7, greenPin = 5, bluePin = 6;
 int redVal, greenVal, blueVal, whiteVal;
 int redDelay, greenDelay, blueDelay;
-const float sampleCoef = 0.0625f;
+const float sampleCoef = 1.0f;
+const int kThresholdMin = 64;
 
 void setup() {
   pinMode(redPin, OUTPUT);
@@ -15,121 +16,159 @@ int bound(int aVal) {
   return aVal;
 }
 
-void loop() {
+void readAccel() {
   redVal = analogRead(xPin);
   greenVal = analogRead(zPin);
   blueVal = analogRead(yPin);
-  
+}
+
+void referenceOffset() {
   redVal -= 512;
   greenVal -= 512;
   blueVal -= 512;
   if( redVal<0 ) redVal = -redVal;
   if( greenVal<0 ) greenVal = -greenVal;
   if( blueVal<0 ) blueVal = -blueVal;
+}
 
+void loop() {
+  readAccel();
+  
+  referenceOffset();
+
+  if( true ) {
+    thresholdAxisMapping();
+  }else{
+    portionedPulseWidthModulation();
+  }
+  
+}
+
+void portionedPulseWidthModulation() {
   // compute delays for each color
-  redDelay = (int)((float)redVal * sampleCoef * 0.5f);
-  greenDelay = (int)((float)greenVal * sampleCoef * 0.5f);
-  blueDelay = (int)((float)blueVal * sampleCoef * 0.5f);
-  int cycle = 256;
+  redDelay = bound((int)((float)redVal * sampleCoef));
+  greenDelay = bound((int)((float)greenVal * sampleCoef));
+  blueDelay = bound((int)((float)blueVal * sampleCoef));
+  int cycle = 512;
   
   // at the beginning of each cycle, turn the lights on
   if( redDelay>0 ) {
     digitalWrite(redPin, LOW);
+  }else{
+    digitalWrite(redPin, HIGH);
   }
   if( greenDelay>0 ) {
     digitalWrite(greenPin, LOW);
+  }else{
+    digitalWrite(greenPin, HIGH);
   }
   if( blueDelay>0 ) {
     digitalWrite(bluePin, LOW);
+  }else{
+    digitalWrite(bluePin, HIGH);
   }
 
   // wait for each color in sequence
   if( redDelay<=blueDelay && redDelay<=greenDelay ) {
     // red first
-    delayMicroseconds(bound(redDelay));
-    cycle -= redDelay;
-    greenDelay -= redDelay;
-    blueDelay -= redDelay;
+    delayMicroseconds(redDelay);
+    cycle = bound(cycle - redDelay);
+    greenDelay = bound(greenDelay - redDelay);
+    blueDelay = bound(blueDelay - redDelay);
     digitalWrite(redPin, HIGH);
     if( greenDelay<=blueDelay ) {
       // then green
-      delayMicroseconds(bound(greenDelay));
-      cycle -= greenDelay;
-      blueDelay -= greenDelay;
+      delayMicroseconds(greenDelay);
+      cycle = bound(cycle - greenDelay);
+      blueDelay = bound(blueDelay - greenDelay);
       digitalWrite(greenPin, HIGH);
-      delayMicroseconds(bound(blueDelay));
-      cycle -= blueDelay;
+      delayMicroseconds(blueDelay);
+      cycle = bound(cycle - blueDelay);
       digitalWrite(bluePin, HIGH);
     }else{
       // then blue
-      delayMicroseconds(bound(blueDelay));
-      cycle -= blueDelay;
-      greenDelay -= blueDelay;
+      delayMicroseconds(blueDelay);
+      cycle = bound(cycle - blueDelay);
+      greenDelay = bound(greenDelay - blueDelay);
       digitalWrite(bluePin, HIGH);
-      delayMicroseconds(bound(greenDelay));
-      cycle -= greenDelay;
+      delayMicroseconds(greenDelay);
+      cycle = bound(cycle - greenDelay);
       digitalWrite(greenPin, HIGH);
     }
   }else if( greenDelay<=redDelay && greenDelay<=blueDelay ) {
     // green first
-    delayMicroseconds(bound(greenDelay));
-    cycle -= greenDelay;
-    redDelay -= greenDelay;
-    blueDelay -= greenDelay;
+    delayMicroseconds(greenDelay);
+    cycle = bound(cycle - greenDelay);
+    redDelay = bound(redDelay - greenDelay);
+    blueDelay = bound(blueDelay - greenDelay);
     digitalWrite(greenPin, HIGH);
     if( redDelay<=blueDelay ) {
       // then red
-      delayMicroseconds(bound(redDelay));
-      cycle -= redDelay;
-      blueDelay -= redDelay;
+      delayMicroseconds(redDelay);
+      cycle = bound(cycle - redDelay);
+      blueDelay = bound(blueDelay - redDelay);
       digitalWrite(redPin, HIGH);
-      delayMicroseconds(bound(blueDelay));
-      cycle -= blueDelay;
+      delayMicroseconds(blueDelay);
+      cycle = bound(cycle - blueDelay);
       digitalWrite(bluePin, HIGH);
     }else{
       // then blue
-      delayMicroseconds(bound(blueDelay));
-      cycle -= blueDelay;
-      greenDelay -= blueDelay;
+      delayMicroseconds(blueDelay);
+      cycle = bound(cycle - blueDelay);
+      greenDelay = bound(greenDelay - blueDelay);
       digitalWrite(bluePin, HIGH);
-      delayMicroseconds(bound(greenDelay));
-      cycle -= greenDelay;
+      delayMicroseconds(greenDelay);
+      cycle = bound(cycle - greenDelay);
       digitalWrite(greenPin, HIGH);
     }
   }else{
     // blue first
-    delayMicroseconds(bound(blueDelay));
-    cycle -= blueDelay;
-    greenDelay -= blueDelay;
-    redDelay -= blueDelay;
+    delayMicroseconds(blueDelay);
+    cycle = bound(cycle - blueDelay);
+    greenDelay = bound(greenDelay - blueDelay);
+    redDelay = bound(redDelay - blueDelay);
     digitalWrite(bluePin, HIGH);
     if( greenDelay<=redDelay ) {
       // then green
-      delayMicroseconds(bound(greenDelay));
-      cycle -= greenDelay;
-      redDelay -= greenDelay;
+      delayMicroseconds(greenDelay);
+      cycle = bound(cycle - greenDelay);
+      redDelay = bound(redDelay - greenDelay);
       digitalWrite(greenPin, HIGH);
-      delayMicroseconds(bound(redDelay));
-      cycle -= redDelay;
+      delayMicroseconds(redDelay);
+      cycle = bound(cycle - redDelay);
       digitalWrite(redPin, HIGH);
     }else{
       // then red
-      delayMicroseconds(bound(redDelay));
-      cycle -= redDelay;
-      greenDelay -= redDelay;
+      delayMicroseconds(redDelay);
+      cycle = bound(cycle - redDelay);
+      greenDelay = bound(greenDelay - redDelay);
       digitalWrite(redPin, HIGH);
-      delayMicroseconds(bound(greenDelay));
-      cycle -= greenDelay;
+      delayMicroseconds(greenDelay);
+      cycle = bound(cycle - greenDelay);
       digitalWrite(greenPin, HIGH);
     }
   }
   if( cycle>0 ) {
     delayMicroseconds(cycle);
   }
+}
 
-//  analogWrite(redPin, (int)((float)redVal * rCoef));
-//  analogWrite(greenPin, (int)((float)greenVal * gCoef));
-//  analogWrite(bluePin, (int)((float)blueVal * bCoef));
+void thresholdAxisMapping() {
+  if( redVal>kThresholdMin ) {
+    digitalWrite(redPin, LOW);
+  }else{
+    digitalWrite(redPin, HIGH);
+  }
+  if( greenVal>kThresholdMin ) {
+    digitalWrite(greenPin, LOW);
+  }else{
+    digitalWrite(greenPin, HIGH);
+  }
+  if( blueVal>kThresholdMin ) {
+    digitalWrite(bluePin, LOW);
+  }else{
+    digitalWrite(bluePin, HIGH);
+  }
+  delayMicroseconds(512);
 }
 
