@@ -1,9 +1,11 @@
 int xPin = A0, yPin = A1, zPin = A2;
+int xRaw = 1, yRaw = 1, zRaw = 1;
 int redPin = 7, greenPin = 5, bluePin = 6;
-int redVal, greenVal, blueVal, whiteVal;
+int redVal = 0, greenVal = 0, blueVal = 0, whiteVal;
 int redDelay, greenDelay, blueDelay;
 const float sampleCoef = 1.0f;
 const int kThresholdMin = 64;
+const float kSampleWeight = 0.10f;
 
 void setup() {
   pinMode(redPin, OUTPUT);
@@ -17,15 +19,20 @@ int bound(int aVal) {
 }
 
 void readAccel() {
-  redVal = analogRead(xPin);
-  greenVal = analogRead(zPin);
-  blueVal = analogRead(yPin);
+  int tX = analogRead(xPin);
+  int tY = analogRead(yPin);
+  int tZ = analogRead(zPin);
+  
+  // smoothing algorithm
+  xRaw = (int)((float)xRaw*(1.0f-kSampleWeight) + (float)tX*kSampleWeight);
+  yRaw = (int)((float)yRaw*(1.0f-kSampleWeight) + (float)tY*kSampleWeight);
+  zRaw = (int)((float)zRaw*(1.0f-kSampleWeight) + (float)tZ*kSampleWeight);
 }
 
 void referenceOffset() {
-  redVal -= 512;
-  greenVal -= 512;
-  blueVal -= 512;
+  redVal = zRaw - 512;
+  greenVal = xRaw - 512;
+  blueVal = yRaw - 512;
   if( redVal<0 ) redVal = -redVal;
   if( greenVal<0 ) greenVal = -greenVal;
   if( blueVal<0 ) blueVal = -blueVal;
